@@ -87,6 +87,7 @@ class Adadelta(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        has_any_param_with_grad = False
         for group in self.param_groups:
             params_with_grad = []
             grads = []
@@ -104,6 +105,9 @@ class Adadelta(Optimizer):
 
             self._init_group(group, params_with_grad, grads, square_avgs, acc_deltas)
 
+            if len(params_with_grad) != 0:
+                has_any_param_with_grad = True
+
             adadelta(
                 params_with_grad,
                 grads,
@@ -117,6 +121,8 @@ class Adadelta(Optimizer):
                 maximize=maximize,
                 differentiable=differentiable,
             )
+
+        self.has_any_param_with_grad = has_any_param_with_grad
 
         return loss
 

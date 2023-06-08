@@ -65,12 +65,16 @@ class SGD(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        has_any_param_with_grad = False
         for group in self.param_groups:
             params_with_grad = []
             d_p_list = []
             momentum_buffer_list = []
 
             has_sparse_grad = self._init_group(group, params_with_grad, d_p_list, momentum_buffer_list)
+
+            if len(params_with_grad) != 0:
+                has_any_param_with_grad = True
 
             sgd(params_with_grad,
                 d_p_list,
@@ -88,6 +92,8 @@ class SGD(Optimizer):
             for p, momentum_buffer in zip(params_with_grad, momentum_buffer_list):
                 state = self.state[p]
                 state['momentum_buffer'] = momentum_buffer
+
+        self.has_any_param_with_grad = has_any_param_with_grad
 
         return loss
 

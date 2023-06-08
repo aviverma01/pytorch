@@ -148,6 +148,7 @@ class AdamW(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        has_any_param_with_grad = False
         for group in self.param_groups:
             params_with_grad = []
             grads = []
@@ -168,6 +169,9 @@ class AdamW(Optimizer):
                 max_exp_avg_sqs,
                 state_steps,
             )
+
+            if len(params_with_grad) != 0:
+                has_any_param_with_grad = True
 
             adamw(
                 params_with_grad,
@@ -190,6 +194,8 @@ class AdamW(Optimizer):
                 grad_scale=getattr(self, "grad_scale", None),
                 found_inf=getattr(self, "found_inf", None),
             )
+
+        self.has_any_param_with_grad = has_any_param_with_grad
 
         return loss
 

@@ -106,6 +106,7 @@ class ASGD(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        has_any_param_with_grad = False
         for group in self.param_groups:
             params_with_grad = []
             grads = []
@@ -115,6 +116,9 @@ class ASGD(Optimizer):
             state_steps = []
 
             self._init_group(group, params_with_grad, grads, mus, axs, etas, state_steps)
+
+            if len(params_with_grad) != 0:
+                has_any_param_with_grad = True
 
             asgd(
                 params_with_grad,
@@ -132,6 +136,8 @@ class ASGD(Optimizer):
                 maximize=group["maximize"],
                 differentiable=group["differentiable"],
             )
+
+        self.has_any_param_with_grad = has_any_param_with_grad
 
         return loss
 

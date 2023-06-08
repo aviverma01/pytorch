@@ -6,7 +6,7 @@ import warnings
 import functools
 import math
 
-from typing import Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import torch.utils.hooks as hooks
 from torch.utils.hooks import RemovableHandle
@@ -75,6 +75,25 @@ def _default_to_fused_or_foreach(params: List[torch.Tensor],
     )
     return fused, foreach
 
+
+def _warn_step_no_param_with_grad(stacklevel=2):
+
+    def is_first_time():
+        return (not hasattr(_warn_step_no_param_with_grad, 'has_warned') or
+                not _warn_step_no_param_with_grad.__dict__['has_warned'])
+
+    if is_first_time():
+        message = (
+            "None of the parameters had their gradients populated during optimizer.step(). "
+            "This could occur when the parameters that the optimizer was initialized "
+            "with have been swapped out of the model. For example, if calling "
+            "module.load_state_dict(assign=True)."
+        )
+        warnings.warn(message, UserWarning, stacklevel=stacklevel + 1)
+        _warn_step_no_param_with_grad.__dict__['has_warned'] = True
+
+def _reset_warn_step_no_param_with_grad():
+    _warn_step_no_param_with_grad.__dict__['has_warned'] = False
 
 # Common doc strings among optimizers
 _foreach_doc = r"""foreach (bool, optional): whether foreach implementation of optimizer
@@ -551,3 +570,11 @@ class Optimizer:
             raise ValueError("some parameters appear in more than one parameter group")
 
         self.param_groups.append(param_group)
+
+
+def _global_warn_step_no_param_with_grad_post_hook(opt: Optimizer, args: Tuple[Any], kwargs: Dict[Any, Any]):
+    has_any_param_with_grad = getattr(opt, "has_any_param_with_grad", False)
+    if not has_any_param_with_grad:
+        _warn_step_no_param_with_grad()
+
+register_optimizer_step_post_hook(_global_warn_step_no_param_with_grad_post_hook)

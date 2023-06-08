@@ -95,6 +95,7 @@ class Adamax(Optimizer):
             with torch.enable_grad():
                 loss = closure()
 
+        has_any_param_with_grad = False
         for group in self.param_groups:
             params_with_grad = []
             grads = []
@@ -112,6 +113,9 @@ class Adamax(Optimizer):
 
             self._init_group(group, params_with_grad, grads, exp_avgs, exp_infs, state_steps)
 
+            if len(params_with_grad) != 0:
+                has_any_param_with_grad = True
+
             adamax(
                 params_with_grad,
                 grads,
@@ -127,6 +131,8 @@ class Adamax(Optimizer):
                 maximize=maximize,
                 differentiable=differentiable,
             )
+
+        self.has_any_param_with_grad = has_any_param_with_grad
 
         return loss
 
